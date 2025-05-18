@@ -12,6 +12,18 @@ const signToken = id => {
   });
 };
 
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user
+    }
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create(req.body);
 
@@ -187,4 +199,30 @@ exports.resetPasswrod = catchAsync(async (req, res, next) => {
     status: 'success',
     token
   });
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  // Get user from collection
+
+  const { currentPassword, newPassword, passwordConfirm } = req.body;
+
+  // if (!password)
+  //   return next(new AppError('Email or passowrd are required', 404));
+
+  const user = await User.findById({ _id: req.user._id }).select('+password');
+
+  // Check of Posted current password is correct
+
+  if (!(await user.correctPassword(currentPassword, user.password)))
+    return next(new AppError('Your current password is wrong', 401));
+
+  // If so, update password
+
+  user.password = newPassword;
+  user.passwordConfirm = passwordConfirm;
+  await user.save();
+
+  // Log user in, send JWT
+
+  createSendToken(user, 200, res);
 });
