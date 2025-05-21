@@ -27,15 +27,7 @@ const createSendToken = (user, statusCode, res) => {
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create(req.body);
 
-  const token = signToken(newUser._id);
-
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser
-    }
-  });
+  createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -181,7 +173,7 @@ exports.resetPasswrod = catchAsync(async (req, res, next) => {
   // If token has not expired, and there is user, set the new password
 
   if (!user) {
-    return next(new AppError('Token is invalid ir has expired', 400));
+    return next(new AppError('Token is invalid or has expired', 400));
   }
 
   // Update changePasswordAt property for the user
@@ -205,9 +197,6 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   // Get user from collection
 
   const { currentPassword, newPassword, passwordConfirm } = req.body;
-
-  // if (!password)
-  //   return next(new AppError('Email or passowrd are required', 404));
 
   const user = await User.findById({ _id: req.user._id }).select('+password');
 
